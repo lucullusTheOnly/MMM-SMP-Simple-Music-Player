@@ -1,0 +1,15 @@
+{
+  "name": "MagicMirror-Simple-Music-Player",
+  "version": "1.0.0",
+  "main": "MMM-SMP-Simple-Music-Player.js",
+  "scripts": {
+    "install": "electron-rebuild"
+  },
+  "dependencies": {
+    "lame": "latest",
+    "speaker": "latest",
+    "fs": "latest",
+    "pcm-volume": "latest",
+    "electron-rebuild": "latest"
+  }
+}
