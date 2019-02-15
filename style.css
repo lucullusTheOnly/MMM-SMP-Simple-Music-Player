@@ -59,14 +59,14 @@ html{
     margin-left: -12px;
 }
 
-#duration_progressbar {
+.duration_progressbar {
     border: 2px solid #fff;
     border-radius: 17px;
     width: 492px;
     padding: 2px;
     margin: 5px;
 }
-#duration_progressbar > div {
+.duration_progressbar > div {
     box-sizing: border-box;
     background-color: #ccc;
     width: 0%;
@@ -75,14 +75,14 @@ html{
     border-radius: 20px;
 }
 
-#volume_progressbar {
+.volume_progressbar {
   border: 2px solid #fff;
   border-radius: 17px;
   width: 174px;
   padding: 2px;
   margin: 13px 5px 5px 320px;
 }
-#volume_progressbar > div {
+.volume_progressbar > div {
   box-sizing: border-box;
   background-color: #fff;
   width: 100%;

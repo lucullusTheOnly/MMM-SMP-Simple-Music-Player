@@ -1,13 +1,8 @@
 TODO:
 - Error-Handling in Bezug auf die serielle Schnittstelle
   - Besseres Handling bei nicht vorhandener Schnittstelle
-  - Warum muss ich immer zuerst den Arduino Monitor öffnen, bevor ich die serielle Schnittstelle mit nodejs nutzen kann?
-    - Vlt mal mit dem Reset des Arduinos rumspielen
 - Textlänge anpassen: Bei zu langen Strings sollen diese gekürzt und mit ... ausgestatted werden
   - Länge des timesliders ausschlaggebend?
 - Ordner und Interpreten als Kategorien im Source Menü implementieren
   - Croping des Menüs bei zu vielen Einträgen? Navigation nach unten zu den versteckten Einträgen? Maximale Größe (vlt sogar einstellbar als config)?
 - Bereinigen des Codes
-  - im main file: Umschreiben der this.config.X variablen zu simplen Instanz Member Variablen (config ist wirklich nur für die Config durch den User gedacht)
-- Saubere Implementierung von Configs
-- für Element IDs zusätzlich den Identifier des Moduls nutzen, um mehrere Instanzen zu erlauben
