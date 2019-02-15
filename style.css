@@ -16,7 +16,7 @@ html{
 	color: #FFF;
 }
 
-.play, .pause, .next, .back, .stop, .volume{
+.play, .pause, .next, .back, .stop, .loop, .shuffle, .volume{
 	padding: 7px;
   margin: -12px 0px 0px 0px;
 	float: left;
@@ -62,14 +62,14 @@ html{
 #duration_progressbar {
     border: 2px solid #fff;
     border-radius: 17px;
-    width: 400px;
+    width: 492px;
     padding: 2px;
     margin: 5px;
 }
 #duration_progressbar > div {
     box-sizing: border-box;
-    background-color: #fff;
-    width: 50%;
+    background-color: #ccc;
+    width: 0%;
     height: 14px;
     border: 1px solid rgba(0, 0, 0, 0);
     border-radius: 20px;
@@ -80,7 +80,7 @@ html{
   border-radius: 17px;
   width: 174px;
   padding: 2px;
-  margin: 13px 5px 5px 230px;
+  margin: 13px 5px 5px 320px;
 }
 #volume_progressbar > div {
   box-sizing: border-box;
@@ -93,18 +93,27 @@ html{
 
 .source {
   height: 21px;
-  padding: 5px 5px 5px 5px;
-  margin: 13px 0px 0px 0px;
+  padding: 5px;
+  margin: -30px 0px -15px -23px;
 }
 
 .sourcetext {
   font-size: 20px;
-  margin: -3px 0px 0px 0px;
+  line-height: 21px;
   text-align: left;
+  border: 1px solid #000;
+  margin: 0px 0px -20px 0px;
+}
+
+.currentsong {
+  padding: 0px 0px 0px 10px;
+  text-align: left;
+  line-height: 21px;
+  font-size: 20px;
 }
 
 .sourcetextcol {
-  border: thin solid #FFFFFF;
+  border: thin solid #000;
 }
 
 .sourcemenu {
@@ -113,7 +122,7 @@ html{
   text-align: left;
   font-size: 18px;
   line-height: 21px;
-  border: thin solid #f00;
+  border: thin solid #fff;
 }
 
 .sourcemenuEntry {
@@ -132,7 +141,6 @@ html{
 }
 
 .layouttable {
-  border: thin solid #fff;
-  text-align: center;
+  border: thin solid #000;
 }
 

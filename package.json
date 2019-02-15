@@ -10,6 +10,9 @@
     "speaker": "latest",
     "fs": "latest",
     "pcm-volume": "latest",
+    "groove": "latest",
+    "batch": "latest",
+    "assert": "latest",
     "electron-rebuild": "latest"
   }
 }
