@@ -454,7 +454,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     }
 
     self.source_menu_length = menu_index;
-    if(self.config.maxMenuEntries < self.source_menu_length){ // Some entries have to be hidden
+    if(self.config.maxMenuEntries != 0 && self.config.maxMenuEntries < self.source_menu_length){ // Some entries have to be hidden
       Log.log("Creating menu navigation arrows");
       var up_arrow = document.createElement("li");
       up_arrow.className = "sourcemenuEntry";
@@ -492,8 +492,10 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       down_arrow.appendChild(down_arrow_image);
       parent_list.appendChild(down_arrow);
     }
-    for(var i=self.config.maxMenuEntries;i<menu_index;i++){
-      self.getMenuEntryByIndex(i, parent_list).style.display = "none";
+    if(self.config.maxMenuEntries!=0){
+      for(var i=self.config.maxMenuEntries;i<menu_index;i++){
+        self.getMenuEntryByIndex(i, parent_list).style.display = "none";
+      }
     }
 
     this.getMenuEntryByIndex(0, parent_list).className = "sourcemenuEntry_selected";
@@ -736,7 +738,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           case "source":
             this.source_menu_selected--;
             if(this.source_menu_selected < 0) this.source_menu_selected=0;
-            if(this.source_menu_selected < this.source_menu_viewport_pos){
+            if(this.config.maxMenuEntries != 0 && this.source_menu_selected < this.source_menu_viewport_pos){
               this.source_menu_viewport_pos--;
               if(this.source_menu_viewport_pos < 0) this.source_menu_viewport_pos = 0;
               this.update_source_menu_viewport();
@@ -774,7 +776,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           case "source":
             this.source_menu_selected++;
             if(this.source_menu_selected == this.sourceMenuLength) this.source_menu_selected=this.sourceMenuLength-1;
-            if(self.source_menu_selected > self.source_menu_viewport_pos + self.config.maxMenuEntries){
+            if(this.config.maxMenuEntries!=0 && self.source_menu_selected > self.source_menu_viewport_pos + self.config.maxMenuEntries){
               this.source_menu_viewport_pos++;
               if(self.source_menu_viewport_pos > self.source_menu_length - self.config.maxMenuEntries - 1) self.source_menu_viewport_pos = self.source_menu_length - self.config.maxMenuEntries - 1;
               this.update_source_menu_viewport();
