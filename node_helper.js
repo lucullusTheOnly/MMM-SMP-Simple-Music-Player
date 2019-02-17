@@ -250,9 +250,6 @@ module.exports = NodeHelper.create({
         self.pos_update_interval = setInterval(function() {
           var pos = self.player.position();
           var files = self.playlist.items().map(function(item) { return item.file; });
-          //console.log("Duration interval: "+pos.pos + " / "+files[0].duration());
-          /*if(pos.pos == -1){
-          }*/
           if(pos.item){
             self.sendSocketNotification("UPDATE_POSITION", { pos: pos.pos, duration: files[0].duration(), stop: false, start: false});
           }
@@ -362,26 +359,6 @@ module.exports = NodeHelper.create({
               self.sendSocketNotification("INITIALIZE",{playlists: playlists, folder_structure: self.folder_structure});
             });
           });
-        /*for(var i=0;i<payload.folders.length;i++){
-          if(payload.folders[i].indexOf("/")!=-1){
-            self.folder_structure.push({name: payload.folders[i].substring(payload.folders[i].lastIndexOf("/")+1), path: payload.folders[i], content: [] });
-          } else {
-            self.folder_structure.push({name: payload.folders[i], content: []});
-          }
-          //if(payload.enableFolderMenu){
-            walk(payload.folders[i], i, function(err, i, results){
-              if(err) throw err;
-              console.log("folder walk callback");
-              self.folder_structure[i].content = results;
-              //console.log(self.folder_structure);
-              //print_folder_structure(self.folder_structure, 0);
-              readplaylists(function(playlist_list){
-                playlists = playlist_list;
-                self.sendSocketNotification("INITIALIZE",{playlists: playlists, folder_structure: self.folder_structure});
-              });
-            });
-          //}
-        }*/
         break;
       case "LOADPLAYLIST":
         if(playstatus == "playing"){

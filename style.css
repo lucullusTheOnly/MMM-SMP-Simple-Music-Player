@@ -140,6 +140,16 @@ html{
   text-align: left;
 }
 
+.up_arrow_image {
+  margin: 0px 0px 0px 40px;
+  height: 10px;
+}
+
+.down_arrow_image {
+  margin: 0px 0px 0px 40px;
+  height: 10px;
+}
+
 .layouttable {
   border: thin solid #000;
 }

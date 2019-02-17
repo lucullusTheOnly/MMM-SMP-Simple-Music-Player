@@ -22,11 +22,14 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.playlist = [];
     this.current_song = 0;
     this.source_menu_selected = 0;
+    this.source_menu_viewport_pos = 0;
+    this.source_menu_length = 0;
     this.playerstate = "stopped";
     this.initializedDom = false;
     this.navistate = "ground";
     this.current_button = 0;
     this.clicking_active = false;
+    this.change_viewport_interval = null;
     this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu});
   },
 
@@ -308,7 +311,6 @@ Module.register("MMM-SMP-Simple-Music-Player",{
 
   fillPlaylistMenu: function(parent_menu, playlist_list, menu_index) {
     var self=this;
-    Log.log("Filling playlist menu");
     var playlist_menu = document.createElement("ul");
     playlist_menu.className = "sourcemenuEntry";
     parent_menu.appendChild(playlist_menu);
@@ -340,7 +342,6 @@ Module.register("MMM-SMP-Simple-Music-Player",{
 
   fillFolderMenu: function(parent_menu, folder_list, menu_index) {
     var self=this;
-    Log.log("filling folder menu");
     var folder_menu = document.createElement("ul");
     folder_menu.className = "sourcemenuEntry";
     parent_menu.appendChild(folder_menu);
@@ -382,7 +383,6 @@ Module.register("MMM-SMP-Simple-Music-Player",{
   buildSourceMenu: function(parent_list) {
     var self=this;
     var menu_index = 0;
-    Log.log("building menu");
 
     //Creating Back Entry
     var back_entry = document.createElement("li");
@@ -453,6 +453,49 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       menu_index = this.fillFolderMenu(this.folder_list_menu, this.folder_structure, menu_index);
     }
 
+    self.source_menu_length = menu_index;
+    if(self.config.maxMenuEntries < self.source_menu_length){ // Some entries have to be hidden
+      Log.log("Creating menu navigation arrows");
+      var up_arrow = document.createElement("li");
+      up_arrow.className = "sourcemenuEntry";
+      up_arrow.id = "sourcemenu_up_"+self.identifier;
+      var up_arrow_image = document.createElement("IMG");
+      up_arrow_image.className = "up_arrow_image";
+      up_arrow_image.id = "up_arrow_image_"+self.identifier;
+      up_arrow_image.src = "MMM-SMP-Simple-Music-Player/up_inactive.svg";
+      function up_arrow_hover_cb(){
+        self.source_menu_viewport_up(true);
+      }
+      function up_arrow_hoverout_cb(){
+        self.source_menu_viewport_up(false);
+      }
+      up_arrow.onmouseover = up_arrow_hover_cb;
+      up_arrow.onmouseout = up_arrow_hoverout_cb;
+      up_arrow.appendChild(up_arrow_image);
+      parent_list.insertBefore(up_arrow, parent_list.firstChild);
+
+      var down_arrow = document.createElement("li");
+      down_arrow.className = "sourcemenuEntry";
+      down_arrow.id = "sourcemenu_down_"+self.identifier;
+      var down_arrow_image = document.createElement("IMG");
+      down_arrow_image.className = "down_arrow_image";
+      down_arrow_image.id = "down_arrow_image_"+self.identifier;
+      down_arrow_image.src = "MMM-SMP-Simple-Music-Player/down.svg";
+      function down_arrow_hover_cb(){
+        self.source_menu_viewport_down(true);
+      }
+      function down_arrow_hoverout_cb(){
+        self.source_menu_viewport_down(false);
+      }
+      down_arrow.onmouseover = down_arrow_hover_cb;
+      down_arrow.onmouseout = down_arrow_hoverout_cb;
+      down_arrow.appendChild(down_arrow_image);
+      parent_list.appendChild(down_arrow);
+    }
+    for(var i=self.config.maxMenuEntries;i<menu_index;i++){
+      self.getMenuEntryByIndex(i, parent_list).style.display = "none";
+    }
+
     this.getMenuEntryByIndex(0, parent_list).className = "sourcemenuEntry_selected";
     this.sourceMenuLength = menu_index;
   },
@@ -464,6 +507,63 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       } else {
         menu.children[i].className = "sourcemenuEntry";
       }
+    }
+  },
+
+  source_menu_viewport_down: function(active){
+    var self=this;
+    if(self.source_menu_viewport_pos == self.source_menu_length - self.config.maxMenuEntries) return;
+    if(active){
+      if(self.change_viewport_interval == null){
+        self.change_viewport_interval = setInterval(function(){
+          self.source_menu_viewport_pos++;
+          if(self.source_menu_viewport_pos > self.source_menu_length - self.config.maxMenuEntries - 1) self.source_menu_viewport_pos = self.source_menu_length - self.config.maxMenuEntries - 1;
+          self.update_source_menu_viewport();
+        }, 200);
+      }
+    } else {
+      clearInterval(self.change_viewport_interval);
+      self.change_viewport_interval = null;
+    }
+  },
+
+  source_menu_viewport_up: function(active){
+    var self=this;
+    if(self.source_menu_viewport_pos == 0) return;
+    if(active){
+      if(self.change_viewport_interval == null){
+        self.change_viewport_interval = setInterval(function(){
+          self.source_menu_viewport_pos--;
+          if(self.source_menu_viewport_pos < 0) self.source_menu_viewport_pos = 0;
+          self.update_source_menu_viewport();
+        }, 200);
+      }
+    } else {
+      clearInterval(self.change_viewport_interval);
+      self.change_viewport_interval = null;
+    }
+  },
+
+  update_source_menu_viewport: function(){
+    var self=this;
+    for(var i=0;i<self.source_menu_length;i++){
+      if(i < self.source_menu_viewport_pos || i > self.source_menu_viewport_pos + self.config.maxMenuEntries) {
+        self.getMenuEntryByIndex(i, self.source_menu).style.display = "none";
+      } else {
+        self.getMenuEntryByIndex(i, self.source_menu).style.display = "block";
+      }
+    }
+
+    if(self.source_menu_viewport_pos == 0){
+      document.getElementById("up_arrow_image_"+self.identifier).src = "MMM-SMP-Simple-Music-Player/up_inactive.svg";
+    } else {
+      document.getElementById("up_arrow_image_"+self.identifier).src = "MMM-SMP-Simple-Music-Player/up.svg";
+    }
+
+    if(self.source_menu_viewport_pos == self.source_menu_length - self.config.maxMenuEntries - 1) {
+      document.getElementById("down_arrow_image_"+self.identifier).src = "MMM-SMP-Simple-Music-Player/down_inactive.svg";
+    } else {
+      document.getElementById("down_arrow_image_"+self.identifier).src = "MMM-SMP-Simple-Music-Player/down.svg";
     }
   },
 
@@ -636,7 +736,12 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           case "source":
             this.source_menu_selected--;
             if(this.source_menu_selected < 0) this.source_menu_selected=0;
-            Log.log("MenuIndex: Searching for " + this.source_menu_selected);
+            if(this.source_menu_selected < this.source_menu_viewport_pos){
+              this.source_menu_viewport_pos--;
+              if(this.source_menu_viewport_pos < 0) this.source_menu_viewport_pos = 0;
+              this.update_source_menu_viewport();
+            }
+            //Log.log("MenuIndex: Searching for " + this.source_menu_selected);
             this.selectSourceEntry();
             break;
           case "duration":
@@ -669,9 +774,15 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           case "source":
             this.source_menu_selected++;
             if(this.source_menu_selected == this.sourceMenuLength) this.source_menu_selected=this.sourceMenuLength-1;
-            Log.log("MenuIndex: Searching for " + this.source_menu_selected);
-            this.resetSourceMenuSelected();
-            this.getMenuEntryByIndex(this.source_menu_selected, this.source_menu).className = "sourcemenuEntry_selected";
+            if(self.source_menu_selected > self.source_menu_viewport_pos + self.config.maxMenuEntries){
+              this.source_menu_viewport_pos++;
+              if(self.source_menu_viewport_pos > self.source_menu_length - self.config.maxMenuEntries - 1) self.source_menu_viewport_pos = self.source_menu_length - self.config.maxMenuEntries - 1;
+              this.update_source_menu_viewport();
+            }
+            this.selectSourceEntry();
+            //Log.log("MenuIndex: Searching for " + this.source_menu_selected);
+            //this.resetSourceMenuSelected();
+            //this.getMenuEntryByIndex(this.source_menu_selected, this.source_menu).className = "sourcemenuEntry_selected";
             break;
           case "duration":
             if(this.playerstate == "playing")
