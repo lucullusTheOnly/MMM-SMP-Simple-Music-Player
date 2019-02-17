@@ -3,6 +3,8 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     enablePlaylistMenu: true,
     enableFolderMenu: false,
     folders: [],
+    folderRecursive: false,
+    maxMenuEntries: 10,
     volume: 100,
     loop: "noloop",
     shuffle: false,
@@ -16,6 +18,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
   start: function() {
     Log.info("Starting module: "+ this.name);
     this.playlists = [];
+    this.folder_structure = [];
     this.playlist = [];
     this.current_song = 0;
     this.source_menu_selected = 0;
@@ -24,8 +27,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.navistate = "ground";
     this.current_button = 0;
     this.clicking_active = false;
-    this.sendSocketNotification("INITIALIZE", '');
-    Log.log("ID: \""+this.identifier+"\"");
+    this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu});
   },
 
 
@@ -306,6 +308,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
 
   fillPlaylistMenu: function(parent_menu, playlist_list, menu_index) {
     var self=this;
+    Log.log("Filling playlist menu");
     var playlist_menu = document.createElement("ul");
     playlist_menu.className = "sourcemenuEntry";
     parent_menu.appendChild(playlist_menu);
@@ -335,9 +338,51 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     return menu_index;
   },
 
+  fillFolderMenu: function(parent_menu, folder_list, menu_index) {
+    var self=this;
+    Log.log("filling folder menu");
+    var folder_menu = document.createElement("ul");
+    folder_menu.className = "sourcemenuEntry";
+    parent_menu.appendChild(folder_menu);
+
+    for(var i=0; i<folder_list.length;i++){
+      var entry = document.createElement("li");
+      entry.innerHTML = folder_list[i].name;
+      entry.path = folder_list[i].path;
+      entry.menu_index = menu_index;
+      entry.actiontype = "folder";
+      function entry_hover_cb(){
+        self.source_menu_selected = this.menu_index;
+        self.selectSourceEntry();
+      }
+      function entry_hoverout_cb(){
+        self.resetSourceMenuSelected();
+      }
+      function entry_click_cb(){
+        self.button_action_sourceentry();
+      }
+      entry.onmouseover = entry_hover_cb;
+      entry.onmouseout = entry_hoverout_cb;
+      entry.onclick = entry_click_cb;
+      menu_index++;
+      folder_menu.appendChild(entry);
+
+      if(folder_list[i].content.length > 0){
+        var entry_content_menu = document.createElement("li");
+        entry_content_menu.className = "sourcemenuEntry";
+        //this.entry_content_menu.id="sourcemenu_folder_"+menu_index+"_"+self.identifier;
+        folder_menu.appendChild(entry_content_menu);
+        menu_index = self.fillFolderMenu(entry_content_menu, folder_list[i].content, menu_index);
+      }
+    }
+
+    return menu_index;
+  },
+
   buildSourceMenu: function(parent_list) {
     var self=this;
     var menu_index = 0;
+    Log.log("building menu");
 
     //Creating Back Entry
     var back_entry = document.createElement("li");
@@ -385,7 +430,27 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     }
 
     if(this.config.enableFolderMenu){
+      var folder_menu = document.createElement("li");
+      folder_menu.className = "sourcemenuEntry";
+      folder_menu.innerHTML = "Folder:";
+      folder_menu.menu_index = menu_index;
+      function folder_entry_hover_cb(){
+        self.source_menu_selected = folder_menu.menu_index;
+        self.selectSourceEntry();
+      }
+      function folder_entry_hoverout_cb(){
+        self.resetSourceMenuSelected();
+      }
+      folder_menu.onmouseover = folder_entry_hover_cb;
+      folder_menu.onmouseout = folder_entry_hoverout_cb;
+      menu_index++;
 
+      this.folder_list_menu = document.createElement("li");
+      this.folder_list_menu.className = "sourcemenuEntry";
+      this.folder_list_menu.id="sourcemenu_playlists_"+self.identifier;
+      parent_list.appendChild(folder_menu);
+      parent_list.appendChild(this.folder_list_menu);
+      menu_index = this.fillFolderMenu(this.folder_list_menu, this.folder_structure, menu_index);
     }
 
     this.getMenuEntryByIndex(0, parent_list).className = "sourcemenuEntry_selected";
@@ -538,6 +603,10 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         case "playlist":
           this.sendSocketNotification("LOADPLAYLIST", {name: this.getMenuEntryByIndex(this.source_menu_selected, this.source_menu).innerHTML, autoplay: this.config.autoplay});
           break;
+        case "folder":
+          var entry = this.getMenuEntryByIndex(this.source_menu_selected, this.source_menu);
+          this.sendSocketNotification("LOADFOLDER", {name: entry.innerHTML, path: entry.path, recursive: this.config.folderRecursive, autoplay: this.config.autoplay});
+          break;
       }
     }
   },
@@ -677,6 +746,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     switch(notification){
       case "INITIALIZE":
         self.playlists = payload.playlists;
+        self.folder_structure = payload.folder_structure;
         Log.log("PlaylistList: "+self.playlists.length);
         self.buildSourceMenu(self.source_menu);
         break;
@@ -685,7 +755,6 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         this.current_song = 0;
         document.getElementById("currentsong_text"+self.identifier).innerHTML = this.playlist[0].title + " - " + this.playlist[0].interpret;
         document.getElementById("sourcetext"+self.identifier).innerHTML = payload.name;
-        //Log.log("/////////////////// LOADEDPLAYLIST length: "+ payload.length);
         break;
       case "NEWFILE":
         document.getElementById("currentsong_text"+self.identifier).innerHTML = payload.title + " - " + payload.interpret;

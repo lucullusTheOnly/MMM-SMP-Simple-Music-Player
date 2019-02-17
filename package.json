@@ -13,6 +13,7 @@
     "groove": "latest",
     "batch": "latest",
     "assert": "latest",
+    "musicmetadata": "latest",
     "electron-rebuild": "latest"
   }
 }
