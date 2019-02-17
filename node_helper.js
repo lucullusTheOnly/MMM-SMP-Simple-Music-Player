@@ -276,7 +276,9 @@ module.exports = NodeHelper.create({
           fs.readdir("./modules/MMM-SMP-Simple-Music-Player/public/playlists/", (err, files) => {
             var playlist_list = [];
             files.forEach(file => {
-              playlist_list.push(file);
+              if(self.supported_file_extensions.indexOf(file.substring(file.lastIndexOf(".")+1)) != -1){
+                playlist_list.push(file);
+              }
             });
             console.log("Loaded Playlists:");
             playlist_list.forEach(playlist => {
