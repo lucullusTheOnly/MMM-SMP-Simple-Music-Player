@@ -21,6 +21,8 @@ cd MMM-SMP-Simple-Music-Player
 npm install
 ```
 
+You need to have libgroove installed for this to work, because the player uses node-groove.
+
 ## Using the module
 To use this module, add the following configuration block to the modules array in the `config/config.js` file:
 ```js
