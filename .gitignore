@@ -1,3 +1,4 @@
 node_modules/
 public/playlists/*.m3u
 *.swp
+package-lock.json
