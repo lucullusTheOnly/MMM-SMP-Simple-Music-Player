@@ -6,13 +6,9 @@
     "install": "electron-rebuild"
   },
   "dependencies": {
-    "lame": "latest",
-    "speaker": "latest",
     "fs": "latest",
-    "pcm-volume": "latest",
-    "groove": "latest",
-    "batch": "latest",
-    "assert": "latest",
+    "path": "latest",
+    "async": "latest",
     "musicmetadata": "latest",
     "electron-rebuild": "latest"
   }
