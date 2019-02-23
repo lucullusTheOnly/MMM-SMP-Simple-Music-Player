@@ -1,6 +1,8 @@
 # MMM-SMP-Simple-Music-Player
 
-This is a module for the [MagicMirror](https://github.com/MichMich/MagicMirror) project, which adds a simple music player. It can play server local files (files on the server, where the MagicMirror runs). It also provides access for playlists (current only m3u) and playing specific folders. The module can be controlled via Clicks or through other modules (through notifications for navigation).
+This is a module for the [MagicMirror](https://github.com/MichMich/MagicMirror) project, which adds a simple music player. It can play server local files (files on the server, where the MagicMirror runs) at the client. It also provides access for playlists (current only m3u) and playing specific folders. The module can be controlled via Clicks or through other modules (through notifications for navigation).
+
+The module uses a HTML5 Audio Element. A Music file will be be loaded completely by the server and sended to the client to be played. This means the performance depends on the network connection between the nodejs server and the client. Best performance will be reached, when the MagicMirror is displayed at the same server, where the nodejs server runs.
 
 ## Images
 ![Ground View](https://raw.githubusercontent.com/lucullusTheOnly/MMM-SMP-Simple-Music-Player/master/docs/ground.png)
@@ -20,8 +22,6 @@ git clone https://github.com/lucullusTheOnly/MMM-SMP-Simple-Music-Player.git
 cd MMM-SMP-Simple-Music-Player
 npm install
 ```
-
-You need to have libgroove installed for this to work, because the player uses node-groove.
 
 ## Using the module
 To use this module, add the following configuration block to the modules array in the `config/config.js` file:
