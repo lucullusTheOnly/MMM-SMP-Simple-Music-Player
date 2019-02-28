@@ -87,16 +87,16 @@ The following properties can be set for this module:
 			<td><code>maxMenuEntries</code></td>
 			<td>The number of menu entries, that should be displayed at once in the source menu. If this number is smaller than the actual number of entries, navigation arrows will be displayed. A value of zero will result in no limitation.
 				<br> <br> This value is <b>OPTIONAL</b>
-				<br><b>Possible values:</b> Any valid <code>int</code> between 0 and 100
-                <br><b>Default value:</b> <code>100</code>
+				<br><b>Possible values:</b> Any valid <code>int</code>
+                <br><b>Default value:</b> <code>10</code>
 			</td>
 		</tr>
     <tr>
 			<td><code>volume</code></td>
 			<td>Set's the initial volume in percent.
 				<br> <br> This value is <b>OPTIONAL</b>
-				<br><b>Possible values:</b> Any valid <code>int</code>
-                <br><b>Default value:</b> <code>10</code>
+				<br><b>Possible values:</b> Any valid <code>int</code> between 0 and 100
+                <br><b>Default value:</b> <code>100</code>
 			</td>
 		</tr>
     <tr>
