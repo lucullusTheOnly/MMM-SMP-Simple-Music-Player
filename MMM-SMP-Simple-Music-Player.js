@@ -8,7 +8,9 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     volume: 100,
     loop: "noloop",
     shuffle: false,
-    autoplay: true
+    autoplay: true,
+    hideUntilActivated: false,
+    hideTimeout: 
   },
 
   getStyles: function() {
@@ -30,6 +32,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.current_button = 0;
     this.clicking_active = false;
     this.change_viewport_interval = null;
+    this.UIhideTimeout = null;
     this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu});
   },
 
@@ -122,6 +125,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       var innerSlider = document.createElement("div");
       innerSlider.id = "duration_inner_progressbar"+self.identifier;
       function timeslider_click_cb(e){
+        resetHideTimeout();
         var newpos = Math.floor(e.offsetX/document.getElementById("duration_progressbar"+self.identifier).offsetWidth*100);
         self.navistate = "ground";
         self.clicking_active = true;
@@ -140,6 +144,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       innervolumeSlider.id = "inner_volume_slider"+self.identifier;
       innervolumeSlider.style.width = self.config.volume+"%";
       function volumeslider_click_cb(e){
+        resetHideTimeout();
         self.config.volume = Math.floor(e.offsetX/(document.getElementById("volume_progressbar"+self.identifier).offsetWidth-6)*100);
         document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume"
                                                         + Math.floor(self.config.volume / 25)
@@ -160,6 +165,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       source_button.id = "source_button"+self.identifier;
       source_button.src = "MMM-SMP-Simple-Music-Player/source.svg";
       function button_action_source_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_source("click");
@@ -189,6 +195,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       play_pause_button.id = "play_button"+self.identifier;
       play_pause_button.src = "MMM-SMP-Simple-Music-Player/play.svg";
       function button_action_play_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_play();
@@ -199,6 +206,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       back_button.id = "back_button"+self.identifier;
       back_button.src = "MMM-SMP-Simple-Music-Player/rev.svg";
       function button_action_back_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_back();
@@ -209,6 +217,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       next_button.id = "next_button"+self.identifier;
       next_button.src = "MMM-SMP-Simple-Music-Player/next.svg";
       function button_action_next_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_next();
@@ -219,6 +228,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       stop_button.id = "stop_button"+self.identifier;
       stop_button.src = "MMM-SMP-Simple-Music-Player/stop.svg";
       function button_action_stop_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_stop();
@@ -239,6 +249,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           break;
       }
       function button_action_loop_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_loop();
@@ -252,6 +263,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       else
         shuffle_button.src = "MMM-SMP-Simple-Music-Player/noshuffle.svg";
       function button_action_shuffle_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_shuffle();
@@ -262,6 +274,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       volume_button.id = "volume_button"+self.identifier;
       volume_button.src = "MMM-SMP-Simple-Music-Player/volume3.svg";
       function button_action_volume_cb(){
+        resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_volume("click");
@@ -303,6 +316,20 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     
     self.setButtonMarker();
     return this.wrapper;
+  },
+
+  resetHideTimeout: function(){
+    var self=this;
+    if(this.config.hideUntilActivated){
+      if(this.UIhideTimeout != null){
+        clearTimeout(this.UIhideTimeout);
+      }
+      this.UIhideTimeout = setTimeout(function(){
+        if(self.playerstate != "playing"){
+          self.hide(0, {lockString: "MMM-SMP-Simple-Music-Player"});
+        }
+      }, this.config.hideTimeout);
+    }
   },
 
   setButtonMarker: function(){
@@ -978,15 +1005,32 @@ Module.register("MMM-SMP-Simple-Music-Player",{
   },
 
 	notificationReceived: function(notification, payload, sender){
+    var self=this;
     /*if(notification === 'DOM_OBJECTS_CREATED'){
       this.hide(10, { lockString: "MMM-Serial-Connector" });
     }*/
     switch(notification) {
+      case "DOM_OBJECTS_CREATED":
+        if(this.config.hideUntilActivated){
+          this.hide(0, {lockString: "MMM-SMP-Simple-Music-Player"});
+        }
+        break;
       case "NAVIGATE_BACK":
       case "NAVIGATE_FORWARD":
       case "NAVIGATE_OK":
         this.clicking_active = false;
+        resetHideTimeout();
         this.naviAction(notification);
+        break;
+      case "ACTIVATE_PLAYER_UI":
+        if(this.config.hideUntilActivated){
+          this.show(0, {lockString: "MMM-SMP-Simple-Music-Player"});
+          this.UIhideTimeout = setTimeout(function(){
+            if(self.playerstate != "playing"){
+              self.hide(0, {lockString: "MMM-SMP-Simple-Music-Player"});
+            }
+          }, this.config.hideTimeout); 
+        }
         break;
     }
   },
