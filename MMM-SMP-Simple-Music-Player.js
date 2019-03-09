@@ -10,7 +10,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     shuffle: false,
     autoplay: true,
     hideUntilActivated: false,
-    hideTimeout: 
+    hideTimeout: 5000
   },
 
   getStyles: function() {
@@ -125,7 +125,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       var innerSlider = document.createElement("div");
       innerSlider.id = "duration_inner_progressbar"+self.identifier;
       function timeslider_click_cb(e){
-        resetHideTimeout();
+        self.resetHideTimeout();
         var newpos = Math.floor(e.offsetX/document.getElementById("duration_progressbar"+self.identifier).offsetWidth*100);
         self.navistate = "ground";
         self.clicking_active = true;
@@ -144,7 +144,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       innervolumeSlider.id = "inner_volume_slider"+self.identifier;
       innervolumeSlider.style.width = self.config.volume+"%";
       function volumeslider_click_cb(e){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.config.volume = Math.floor(e.offsetX/(document.getElementById("volume_progressbar"+self.identifier).offsetWidth-6)*100);
         document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume"
                                                         + Math.floor(self.config.volume / 25)
@@ -165,7 +165,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       source_button.id = "source_button"+self.identifier;
       source_button.src = "MMM-SMP-Simple-Music-Player/source.svg";
       function button_action_source_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_source("click");
@@ -195,7 +195,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       play_pause_button.id = "play_button"+self.identifier;
       play_pause_button.src = "MMM-SMP-Simple-Music-Player/play.svg";
       function button_action_play_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_play();
@@ -206,7 +206,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       back_button.id = "back_button"+self.identifier;
       back_button.src = "MMM-SMP-Simple-Music-Player/rev.svg";
       function button_action_back_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_back();
@@ -217,7 +217,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       next_button.id = "next_button"+self.identifier;
       next_button.src = "MMM-SMP-Simple-Music-Player/next.svg";
       function button_action_next_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_next();
@@ -228,7 +228,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       stop_button.id = "stop_button"+self.identifier;
       stop_button.src = "MMM-SMP-Simple-Music-Player/stop.svg";
       function button_action_stop_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_stop();
@@ -249,7 +249,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           break;
       }
       function button_action_loop_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_loop();
@@ -263,7 +263,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       else
         shuffle_button.src = "MMM-SMP-Simple-Music-Player/noshuffle.svg";
       function button_action_shuffle_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_shuffle();
@@ -274,7 +274,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       volume_button.id = "volume_button"+self.identifier;
       volume_button.src = "MMM-SMP-Simple-Music-Player/volume3.svg";
       function button_action_volume_cb(){
-        resetHideTimeout();
+        self.resetHideTimeout();
         self.clicking_active = true;
         self.setButtonMarker();
         self.button_action_volume("click");
@@ -392,13 +392,16 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       entry.menu_index = menu_index;
       entry.actiontype = "playlist";
       function entry_hover_cb(){
+        self.resetHideTimeout();
         self.source_menu_selected = this.menu_index;
         self.selectSourceEntry();
       }
       function entry_hoverout_cb(){
+        self.resetHideTimeout();
         self.resetSourceMenuSelected();
       }
       function entry_click_cb(){
+        self.resetHideTimeout();
         self.button_action_sourceentry();
       }
       entry.onmouseover = entry_hover_cb;
@@ -424,13 +427,16 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       entry.menu_index = menu_index;
       entry.actiontype = "folder";
       function entry_hover_cb(){
+        self.resetHideTimeout();
         self.source_menu_selected = this.menu_index;
         self.selectSourceEntry();
       }
       function entry_hoverout_cb(){
+        self.resetHideTimeout();
         self.resetSourceMenuSelected();
       }
       function entry_click_cb(){
+        self.resetHideTimeout();
         self.button_action_sourceentry();
       }
       entry.onmouseover = entry_hover_cb;
@@ -482,10 +488,12 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       playlist_menu.innerHTML = "Playlists:";
       playlist_menu.menu_index = menu_index;
       function playlist_entry_hover_cb(){
+        self.resetHideTimeout();
         self.source_menu_selected = playlist_menu.menu_index;
         self.selectSourceEntry();
       }
       function playlist_entry_hoverout_cb(){
+        self.resetHideTimeout();
         self.resetSourceMenuSelected();
       }
       playlist_menu.onmouseover = playlist_entry_hover_cb;
@@ -506,10 +514,12 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       folder_menu.innerHTML = "Folder:";
       folder_menu.menu_index = menu_index;
       function folder_entry_hover_cb(){
+        self.resetHideTimeout();
         self.source_menu_selected = folder_menu.menu_index;
         self.selectSourceEntry();
       }
       function folder_entry_hoverout_cb(){
+        self.resetHideTimeout();
         self.resetSourceMenuSelected();
       }
       folder_menu.onmouseover = folder_entry_hover_cb;
@@ -535,9 +545,11 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       up_arrow_image.id = "up_arrow_image_"+self.identifier;
       up_arrow_image.src = "MMM-SMP-Simple-Music-Player/up_inactive.svg";
       function up_arrow_hover_cb(){
+        self.resetHideTimeout();
         self.source_menu_viewport_up(true);
       }
       function up_arrow_hoverout_cb(){
+        self.resetHideTimeout();
         self.source_menu_viewport_up(false);
       }
       up_arrow.onmouseover = up_arrow_hover_cb;
@@ -553,9 +565,11 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       down_arrow_image.id = "down_arrow_image_"+self.identifier;
       down_arrow_image.src = "MMM-SMP-Simple-Music-Player/down.svg";
       function down_arrow_hover_cb(){
+        self.resetHideTimeout();
         self.source_menu_viewport_down(true);
       }
       function down_arrow_hoverout_cb(){
+        self.resetHideTimeout();
         self.source_menu_viewport_down(false);
       }
       down_arrow.onmouseover = down_arrow_hover_cb;
@@ -1019,7 +1033,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       case "NAVIGATE_FORWARD":
       case "NAVIGATE_OK":
         this.clicking_active = false;
-        resetHideTimeout();
+        self.resetHideTimeout();
         this.naviAction(notification);
         break;
       case "ACTIVATE_PLAYER_UI":
