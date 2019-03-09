@@ -832,7 +832,8 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           case "ground":
             this.current_button--;
             if( this.current_button < 0 ) this.current_button = 0;
-            this.updateDom(0);
+            //this.updateDom(0);
+            self.setButtonMarker();
             break;
           case "volume":
             this.config.volume -= 10;
@@ -844,6 +845,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
               document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume_off.svg";
             }
             document.getElementById("inner_volume_slider"+self.identifier).style.width = this.config.volume + "%";
+            document.getElementById("audio_"+self.identifier).volume = self.config.volume/100;
             break;
           case "source":
             this.source_menu_selected--;
@@ -876,7 +878,8 @@ Module.register("MMM-SMP-Simple-Music-Player",{
             if( this.current_button >= this.button_mapping.length ){
               this.current_button = this.button_mapping.length - 1;
             }
-            this.updateDom(0);
+            //this.updateDom(0);
+            self.setButtonMarker();
             break;
           case "volume":
             this.config.volume += 10;
@@ -888,6 +891,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
               document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume_off.svg";
             }
             document.getElementById("inner_volume_slider"+self.identifier).style.width = this.config.volume + "%";
+            document.getElementById("audio_"+self.identifier).volume = self.config.volume/100;
             break;
           case "source":
             this.source_menu_selected++;
@@ -1008,6 +1012,10 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         this.current_song = payload.tracknumber;
         if(self.playerstate == "playing"){
           audio.play();
+        } else if(self.config.autoplay){
+          self.button_action_play();
+          self.clicking_active = true;
+          self.hideMenu();
         }
         break;
       case "LOADINGERROR":
