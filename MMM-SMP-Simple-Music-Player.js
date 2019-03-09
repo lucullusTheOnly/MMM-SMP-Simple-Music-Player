@@ -44,7 +44,6 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       audio.id = "audio_"+self.identifier;
       audio.setAttribute("type","audio/mpeg");
       audio.loaded = false;
-      audio.setAttribute("controls","true");
       self.updatetimer = null;
       audio.addEventListener("playing", function(_event) {
         advance(_event.target.duration, audio);
