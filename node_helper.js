@@ -99,6 +99,15 @@ module.exports = NodeHelper.create({
 
   load_playlist: function(path, autoplay) {
     var self = this;
+    
+    var indexOfPath = function(array, path){
+      for(var i=0;i<array.length;i++){
+        if(array[i].path == path){
+          return i;
+        }
+      }
+      return -1;
+    }
 
     function load_m3u_playlist(path){
       fs.readFile(path, 'utf8', function(err, data){
@@ -108,19 +117,39 @@ module.exports = NodeHelper.create({
         lines = data.split(/\r?\n/);
         var i;
         var list = [];
-        var title ="";
-        var interpret = "";
-        var duration = 0;
-        for(i=0;i<lines.length;i++){
-          if( lines[i].startsWith("#EXTINF") ){
-            duration = parseInt(lines[i].substr(8,lines[i].indexOf(",",8)-8));
-            interpret = lines[i].substr(lines[i].indexOf(",",8)+1, lines[i].indexOf(" - ")-lines[i].indexOf(",")-1);
-            title = lines[i].substr(lines[i].indexOf(" - ")+3);
-          } else if(!lines[i].startsWith("#") && lines[i]!== ""){
-            list.push({title: title, interpret: interpret, duration: duration, path: decodeURI(lines[i].substr(7)), filehandle: null});
+        for(var i=0;i<lines.length;i++){
+          if(lines[i] != "" && lines[i].substr(0,1)!="#"){
+            list.push({path: decodeURI(lines[i].substr(lines[i].indexOf("//")+1))});
           }
         }
-        self.initiatePlaylist(list,path.substr(path.lastIndexOf("/")+1, path.lastIndexOf(".")-1-path.lastIndexOf("/")), autoplay);
+        Async.each(list,
+          function(item, callback){
+            var readableStream = fs.createReadStream(item.path);
+            var parser = MusicMetaData(readableStream, function(err, metadata) {
+              var index = indexOfPath(list, item.path);
+              if(index == -1) {console.log("not found "+item.path); callback(); return;}
+              if (err) {
+                console.log("Could not read metadata for file "+item.path);
+                list[ index ].title = item.path.substring(item.path.lastIndexOf("/")+1);
+                list[ index ].interpret = "";
+              } else {
+                //console.log(metadata);
+                list[ index ].title = metadata.title;
+                list[ index ].interpret = metadata.artist[0];
+              }
+              readableStream.close();
+              //console.log(results[index]);
+              callback();
+            });
+          },
+          function(err){
+            if(err) throw err;
+            if(list.length == 0){
+              self.sendSocketNotification("LOADINGERROR",'');
+              return;
+            }
+            self.initiatePlaylist(list,path.substr(path.lastIndexOf("/")+1, path.lastIndexOf(".")-1-path.lastIndexOf("/")), autoplay);
+          });
       });
     }
     
