@@ -33,6 +33,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.clicking_active = false;
     this.change_viewport_interval = null;
     this.UIhideTimeout = null;
+    this.UIhidden = false;
     this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu});
   },
 
@@ -321,11 +322,16 @@ Module.register("MMM-SMP-Simple-Music-Player",{
   resetHideTimeout: function(){
     var self=this;
     if(this.config.hideUntilActivated){
+      if(self.UIhidden){
+        self.show(0, {lockString: "MMM-SMP-Simple-Music-Player"});
+        self.UIhidden = false;
+      }
       if(this.UIhideTimeout != null){
         clearTimeout(this.UIhideTimeout);
       }
       this.UIhideTimeout = setTimeout(function(){
         if(self.playerstate != "playing"){
+          self.UIhidden = true;
           self.hide(0, {lockString: "MMM-SMP-Simple-Music-Player"});
         }
       }, this.config.hideTimeout);
