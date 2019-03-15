@@ -10,7 +10,8 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     shuffle: false,
     autoplay: true,
     hideUntilActivated: false,
-    hideTimeout: 5000
+    hideTimeout: 5000,
+    streamingPort: 3000
   },
 
   getStyles: function() {
@@ -34,7 +35,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.change_viewport_interval = null;
     this.UIhideTimeout = null;
     this.UIhidden = false;
-    this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu});
+    this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu, streamingPort: this.config.streamingPort});
   },
 
 
@@ -1010,11 +1011,8 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         document.getElementById("currentsong_text"+self.identifier).innerHTML = payload.title + " - " + payload.artist;
         var audio = document.getElementById("audio_"+self.identifier);
         audio.loaded=true;
-        var binaryData = [];
-        binaryData.push(payload.data);
-        var url = window.URL.createObjectURL(new Blob(binaryData, {type: "audio/mpeg"}));
         audio.load();
-        audio.setAttribute('src', url);
+        audio.setAttribute('src', "http://localhost:"+self.config.streamingPort);
         this.current_song = payload.tracknumber;
         if(self.playerstate == "playing"){
           audio.play();

@@ -3,7 +3,7 @@ var fs = require("fs");
 var Path = require('path');
 var MusicMetaData = require('musicmetadata');
 var Async = require('async');
-
+var http = require('http')
 
 var current_playlist = [];
 var playlists = [];
@@ -15,6 +15,8 @@ module.exports = NodeHelper.create({
     self.supported_file_extensions= [ "mp3" ];
     self.supported_playlist_extensions = [ "m3u" ];
     self.folder_structure = [];
+    self.server = null;
+    self.streamingPort = 0;
     console.log("Started nodehelper for SMP");
   },
 
@@ -167,12 +169,20 @@ module.exports = NodeHelper.create({
     }
   },
 
+  createMP3Server: function(res){
+    const stream = fs.createReadStream(current_playlist[current_song].path);
+    stream.pipe(res);
+  },
+
   load_file: function(tracknumber) {
     var self=this;
     if(fs.existsSync(current_playlist[tracknumber].path)){
-      fs.readFile(current_playlist[tracknumber].path, function(err, data) {
-        self.sendSocketNotification("NEWFILE", {data: data, tracknumber: tracknumber, title: current_playlist[tracknumber].title, artist: current_playlist[tracknumber].interpret});
+      if(self.server != null) self.server.close();
+      self.server = http.createServer(function (req, res) {
+        self.createMP3Server(res);
       });
+      self.server.listen(self.streamingPort);
+      self.sendSocketNotification("NEWFILE", {tracknumber: tracknumber, title: current_playlist[tracknumber].title, artist: current_playlist[tracknumber].interpret});
     }
   },
 
@@ -180,6 +190,7 @@ module.exports = NodeHelper.create({
     var self=this;
     switch(notification){
       case "INITIALIZE":
+        this.streamingPort = payload.streamingPort;
         var readplaylists = function(done){
           fs.readdir("./modules/MMM-SMP-Simple-Music-Player/public/playlists/", (err, files) => {
             var playlist_list = [];

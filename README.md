@@ -2,7 +2,9 @@
 
 This is a module for the [MagicMirror](https://github.com/MichMich/MagicMirror) project, which adds a simple music player. It can play server local files (files on the server, where the MagicMirror runs) at the client. It also provides access for playlists (current only m3u) and playing specific folders. The module can be controlled via Clicks or through other modules (through notifications for navigation).
 
-The module uses a HTML5 Audio Element. A Music file will be be loaded completely by the server and sended to the client to be played. This means the performance depends on the network connection between the nodejs server and the client. Best performance will be reached, when the MagicMirror is displayed at the same server, where the nodejs server runs.
+The module uses a HTML5 Audio Element. The audio file will be streamed through an extra nodejs server at another port to the client.
+
+This repository has two extra brances, that use different methods for the actual playback of the music. The `groove-version` branch uses node-groove to play the files directly at the server. Since I wasn't able to install the necessary libgroove on my Raspberry Pi 3, I changed the music provider to a HTML5 Audio element, which plays the music at the client browser. In the `file_based` branch loads the music file completely and sends it through the notification system to the client browser. As this didn't have a good performance at the Raspberry Pi, I changed this to stream the file trough an extra nodejs server, which get's automatically started by the module. This gives a way better performance on the Raspberry Pi and is implemented in the `master` branch. Since the other versions are also completely working, I wanted to preserve them in extra branches.
 
 ## Images
 ![Ground View](https://raw.githubusercontent.com/lucullusTheOnly/MMM-SMP-Simple-Music-Player/master/docs/ground.png)
@@ -126,5 +128,13 @@ The following properties can be set for this module:
                 <br><b>Default value:</b> <code>true</code>
 			</td>
 		</tr>
+    <tr>
+      <td><code>streamingPort</code></td>
+      <td>Set's the port, on which the streaming server will serve the music files.
+        <br> <br> This value is <b>OPTIONAL</b>
+        <br><b>Possible values:</b> Any valid port number, which can be opened by nodejs
+                <br><b>Default value:</b> <code>3000</code>
+      </td>
+    </tr>
 	</tbody>
 </table>
