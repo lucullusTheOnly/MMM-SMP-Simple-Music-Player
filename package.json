@@ -10,6 +10,7 @@
     "path": "latest",
     "async": "latest",
     "musicmetadata": "latest",
+    "http": "latest",
     "electron-rebuild": "latest"
   }
 }
