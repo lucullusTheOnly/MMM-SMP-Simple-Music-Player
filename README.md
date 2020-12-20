@@ -71,8 +71,7 @@ The following properties can be set for this module:
 		</tr>
 		<tr>
 			<td><code>folders</code></td>
-			<td>A list of folder paths (strings), that should be displayed (and thus be playable) in the source menu.
-				<br> <br> This value is <b>OPTIONAL</b>
+			<td>A list of folder paths (strings), where your music files live. You need to include at least one path, or your player will have not files to play.
 				<br><b>Possible values:</b> <code>String array</code>
                 <br><b>Default value:</b> <code>[]</code>
 			</td>
