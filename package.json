@@ -1,6 +1,6 @@
 {
   "name": "MagicMirror-Simple-Music-Player",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "MMM-SMP-Simple-Music-Player.js",
   "scripts": {
     "install": "electron-rebuild"
@@ -11,6 +11,7 @@
     "async": "latest",
     "musicmetadata": "latest",
     "http": "latest",
-    "electron-rebuild": "latest"
+    "electron-rebuild": "latest",
+    "telnet-client": "latest"
   }
 }

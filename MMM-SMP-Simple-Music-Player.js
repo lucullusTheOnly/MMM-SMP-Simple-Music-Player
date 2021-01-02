@@ -2,8 +2,10 @@ Module.register("MMM-SMP-Simple-Music-Player",{
   defaults: {
     enablePlaylistMenu: true,
     enableFolderMenu: false,
+    enableArtistsMenu: false,
     folders: [],
     folderRecursive: false,
+    folderMenuLevelLimit: 2,
     maxMenuEntries: 10,
     volume: 100,
     loop: "noloop",
@@ -11,7 +13,12 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     autoplay: true,
     hideUntilActivated: false,
     hideTimeout: 5000,
-    streamingPort: 3000
+    streamingPort: 3000,
+    useSqueeze: false,
+    squeezeServer: "",
+    squeezePort: 9090,
+    squeezePlayerID: "",
+    squeezeTelnetTimeout: 1000
   },
 
   getStyles: function() {
@@ -23,6 +30,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.playlists = [];
     this.folder_structure = [];
     this.playlist = [];
+    this.artists = [];
     this.current_song = 0;
     this.source_menu_selected = 0;
     this.source_menu_viewport_pos = 0;
@@ -35,7 +43,11 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     this.change_viewport_interval = null;
     this.UIhideTimeout = null;
     this.UIhidden = false;
-    this.sendSocketNotification("INITIALIZE", {folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu, streamingPort: this.config.streamingPort});
+    if(this.config.useSqueeze){
+      this.current_song = -1;
+      this.squeeze_duration = 0;
+    }
+    this.sendSocketNotification("INITIALIZE", {config: this.config, folders: this.config.folders, enableFolderMenu: this.config.enableFolderMenu, streamingPort: this.config.streamingPort});
   },
 
 
@@ -133,8 +145,12 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         self.clicking_active = true;
         self.setButtonMarker();
         self.hideMenu();
-        var audio = document.getElementById("audio_"+self.identifier);
-        audio.currentTime = newpos/100.0*audio.duration;
+        if(self.config.useSqueeze){
+          self.sendSocketNotification("SQUEEZECONTROL",{action:"seek", time:newpos/100.0*self.squeeze_duration});
+        } else {
+          var audio = document.getElementById("audio_"+self.identifier);
+          audio.currentTime = newpos/100.0*audio.duration;
+        }
       }
       timeSlider.onclick = timeslider_click_cb;
       timeSlider.appendChild(innerSlider);
@@ -155,7 +171,11 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume_off.svg";
         }
         document.getElementById("inner_volume_slider"+self.identifier).style.width = self.config.volume + "%";
-        document.getElementById("audio_"+self.identifier).volume = self.config.volume/100;
+        if(self.config.useSqueeze){
+          self.sendSocketNotification("SQUEEZECONTROL", {action:"volume", percent:self.config.volume});
+        } else {
+          document.getElementById("audio_"+self.identifier).volume = self.config.volume/100;
+        }
       }
       volumeSlider.onclick = volumeslider_click_cb;
       volumeSlider.appendChild(innervolumeSlider);
@@ -176,7 +196,11 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       var source_text = document.createElement("div");
       source_text.className = "sourcetext";
       source_text.id = "sourcetext"+self.identifier;
-      source_text.innerHTML = "Choose music source...";
+      if(self.config.useSqueeze){
+        source_text.innerHTML = "Squeeze: Initializing";
+      } else {
+        source_text.innerHTML = "Choose music source...";
+      }
 
       self.source_menu = document.createElement("ul");
       self.source_menu.id = "sourcemenu"+self.identifier;
@@ -420,6 +444,41 @@ Module.register("MMM-SMP-Simple-Music-Player",{
 
     return menu_index;
   },
+  
+  fillArtistMenu: function(parent_menu, artist_list, menu_index) {
+    var self=this;
+    var artist_menu = document.createElement("ul");
+    artist_menu.className = "sourcemenuEntry";
+    parent_menu.appendChild(artist_menu);
+
+    for(var i=0; i<artist_list.length;i++){
+      var entry = document.createElement("li");
+      entry.innerHTML = artist_list[i]["name"];
+      entry.menu_index = menu_index;
+      entry.actiontype = "artist";
+      entry.artist_ID = artist_list[i]["id"];
+      function entry_hover_cb(){
+        self.resetHideTimeout();
+        self.source_menu_selected = this.menu_index;
+        self.selectSourceEntry();
+      }
+      function entry_hoverout_cb(){
+        self.resetHideTimeout();
+        self.resetSourceMenuSelected();
+      }
+      function entry_click_cb(){
+        self.resetHideTimeout();
+        self.button_action_sourceentry();
+      }
+      entry.onmouseover = entry_hover_cb;
+      entry.onmouseout = entry_hoverout_cb;
+      entry.onclick = entry_click_cb;
+      menu_index++;
+      artist_menu.appendChild(entry);
+    }
+
+    return menu_index;
+  },
 
   fillFolderMenu: function(parent_menu, folder_list, menu_index) {
     var self=this;
@@ -515,6 +574,32 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       menu_index = this.fillPlaylistMenu(this.playlist_list_menu, this.playlists, menu_index);
     }
 
+    if(this.config.enableArtistsMenu){
+      var artist_menu = document.createElement("li");
+      artist_menu.className = "sourcemenuEntry";
+      artist_menu.innerHTML = "Artists:";
+      artist_menu.menu_index = menu_index;
+      function artist_entry_hover_cb(){
+        self.resetHideTimeout();
+        self.source_menu_selected = artist_menu.menu_index;
+        self.selectSourceEntry();
+      }
+      function artist_entry_hoverout_cb(){
+        self.resetHideTimeout();
+        self.resetSourceMenuSelected();
+      }
+      artist_menu.onmouseover = artist_entry_hover_cb;
+      artist_menu.onmouseout = artist_entry_hoverout_cb;
+      menu_index++;
+
+      this.artist_list_menu = document.createElement("li");
+      this.artist_list_menu.className = "sourcemenuEntry";
+      this.artist_list_menu.id="sourcemenu_artists_"+self.identifier;
+      parent_list.appendChild(artist_menu);
+      parent_list.appendChild(this.artist_list_menu);
+      menu_index = this.fillArtistMenu(this.artist_list_menu, self.artists, menu_index);
+    }
+
     if(this.config.enableFolderMenu){
       var folder_menu = document.createElement("li");
       folder_menu.className = "sourcemenuEntry";
@@ -535,7 +620,7 @@ Module.register("MMM-SMP-Simple-Music-Player",{
 
       this.folder_list_menu = document.createElement("li");
       this.folder_list_menu.className = "sourcemenuEntry";
-      this.folder_list_menu.id="sourcemenu_playlists_"+self.identifier;
+      this.folder_list_menu.id="sourcemenu_folder_"+self.identifier;
       parent_list.appendChild(folder_menu);
       parent_list.appendChild(this.folder_list_menu);
       menu_index = this.fillFolderMenu(this.folder_list_menu, this.folder_structure, menu_index);
@@ -663,60 +748,83 @@ Module.register("MMM-SMP-Simple-Music-Player",{
 
   button_action_play: function(){
     var self=this;
-    if(this.playlist.length == 0) {Log.log("*********Playlist empty");return;}
+    if(this.playlist.length == 0 && !self.config.useSqueeze) {Log.log("*********Playlist empty");return;}
     if(this.playerstate == "stopped"){
       this.playerstate = "playing";
       document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/pause.svg";
-      if(document.getElementById("audio_"+self.identifier).loaded){
-        document.getElementById("audio_"+self.identifier).play();
+      if(self.config.useSqueeze){
+        // Just executing play here (no loading), since loading is already done by choosing
+        // the source for squeeze.
+        this.sendSocketNotification("SQUEEZECONTROL", {action: "play"});
       } else {
-        this.sendSocketNotification("LOADFILE", this.current_song);
+        if(document.getElementById("audio_"+self.identifier).loaded){
+          document.getElementById("audio_"+self.identifier).play();
+        } else {
+          // Load song to audio element in frontend, if it is not already loaded
+          this.sendSocketNotification("LOADFILE", this.current_song);
+        }
       }
     } else if(this.playerstate == "playing"){
       this.playerstate = "paused";
       document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/play.svg";
-      document.getElementById("audio_"+self.identifier).pause();
+      if(self.config.useSqueeze){
+        this.sendSocketNotification("SQUEEZECONTROL", {action: "pause"});
+      } else {
+        document.getElementById("audio_"+self.identifier).pause();
+      }
     } else if(this.playerstate == "paused"){
       this.playerstate = "playing";
       document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/pause.svg";
-      document.getElementById("audio_"+self.identifier).play();
+      if(self.config.useSqueeze){
+        this.sendSocketNotification("SQUEEZECONTROL", {action: "play"});
+      } else {
+        document.getElementById("audio_"+self.identifier).play();
+      }
     }
     this.navistate = "ground";
     this.hideMenu();
   },
 
   button_action_back: function(){
-    if(this.current_song <= 0 && (this.config.loop!="loop" && !this.config.shuffle)) return;
-    if(this.config.shuffle){
-      this.current_song = Math.floor((Math.random() * this.playlist.length));
-    } else if(this.config.loop == "loop"){
-      if(this.current_song == 0){
-        this.current_song = this.playlist.length - 1;
+    if(this.config.useSqueeze){
+      this.sendSocketNotification("SQUEEZECONTROL", {action: "prev"});
+    } else {
+      if(this.current_song <= 0 && (this.config.loop!="loop" && !this.config.shuffle)) return;
+      if(this.config.shuffle){
+        this.current_song = Math.floor((Math.random() * this.playlist.length));
+      } else if(this.config.loop == "loop"){
+        if(this.current_song == 0){
+          this.current_song = this.playlist.length - 1;
+        } else {
+          this.current_song--;
+        }
       } else {
         this.current_song--;
       }
-    } else {
-      this.current_song--;
+      this.sendSocketNotification("LOADFILE",this.current_song);
     }
-    this.sendSocketNotification("LOADFILE",this.current_song);
     this.navistate = "ground";
     this.hideMenu();
   },
 
   button_action_next: function(){
-    if(this.current_song >= this.playlist.length - 1 && (this.config.loop!="loop" && !this.config.shuffle)) return;
-    if(this.config.shuffle){
-      this.current_song = Math.floor((Math.random() * this.playlist.length));
-    } else if(this.config.loop == "loop"){
-      if(this.current_song == this.playlist.length - 1){
-        this.current_song = 0;
+    if(this.config.useSqueeze){
+      this.sendSocketNotification("SQUEEZECONTROL", {action: "next"});
+    } else {
+      if(this.current_song >= this.playlist.length - 1 && (this.config.loop!="loop" && !this.config.shuffle)) return;
+      if(this.config.shuffle){
+        this.current_song = Math.floor((Math.random() * this.playlist.length));
+      } else if(this.config.loop == "loop"){
+        if(this.current_song == this.playlist.length - 1){
+          this.current_song = 0;
+        } else {
+          this.current_song++;
+        }
       } else {
         this.current_song++;
       }
-    } else {
-      this.current_song++;
+      this.sendSocketNotification("LOADFILE", this.current_song);
     }
-    this.sendSocketNotification("LOADFILE", this.current_song);
     this.navistate = "ground";
     this.hideMenu();
   },
@@ -726,9 +834,13 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/play.svg";
     document.getElementById("duration_inner_progressbar"+self.identifier).style.width = "0%";
     this.playerstate = "stopped";
-    var audio = document.getElementById("audio_"+self.identifier);
-    audio.currentTime = 0;
-    audio.pause();
+    if(self.config.useSqueeze){
+      self.sendSocketNotification("SQUEEZECONTROL", {action: "stop"});
+    } else {
+      var audio = document.getElementById("audio_"+self.identifier);
+      audio.currentTime = 0;
+      audio.pause();
+    }
     this.navistate = "ground";
     this.hideMenu();
   },
@@ -749,6 +861,9 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         document.getElementById("loop_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/noloop.svg";
         break;
     }
+    if(self.config.useSqueeze){
+      self.sendSocketNotification("SQUEEZECONTROL", {action:self.config.loop});
+    }
     this.navistate = "ground";
     self.hideMenu();
   },
@@ -758,9 +873,15 @@ Module.register("MMM-SMP-Simple-Music-Player",{
     if(self.config.shuffle){
       self.config.shuffle = false;
       document.getElementById("shuffle_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/noshuffle.svg";
+      if(self.config.useSqueeze){
+        self.sendSocketNotification("SQUEEZECONTROL", {action:"noshuffle"});
+      }
     } else {
       self.config.shuffle = true;
       document.getElementById("shuffle_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/shuffle.svg";
+      if(self.config.useSqueeze){
+        self.sendSocketNotification("SQUEEZECONTROL", {action:"shuffle"});
+      }
     }
     this.navistate = "ground";
     self.hideMenu();
@@ -827,6 +948,10 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           var entry = this.getMenuEntryByIndex(this.source_menu_selected, this.source_menu);
           this.sendSocketNotification("LOADFOLDER", {name: entry.innerHTML, path: entry.path, recursive: this.config.folderRecursive, autoplay: this.config.autoplay});
           break;
+        case "artist":
+          var entry = this.getMenuEntryByIndex(this.source_menu_selected, this.source_menu);
+          this.sendSocketNotification("LOADARTIST", {name: entry.innerHTML, id: entry.artist_ID, autoplay: this.config.autoplay});
+          break;
       }
     }
   },
@@ -853,6 +978,10 @@ Module.register("MMM-SMP-Simple-Music-Player",{
             }
             document.getElementById("inner_volume_slider"+self.identifier).style.width = this.config.volume + "%";
             document.getElementById("audio_"+self.identifier).volume = self.config.volume/100;
+
+            if(self.config.useSqueeze){
+              self.sendSocketNotification("SQUEEZECONTROL", {action:"volume", percent:"-10"});
+            }
             break;
           case "source":
             this.source_menu_selected--;
@@ -866,15 +995,19 @@ Module.register("MMM-SMP-Simple-Music-Player",{
             break;
           case "duration":
             if(this.playerstate == "playing")
-              var audio = document.getElementById("audio_"+self.identifier);
-              var timestamp = audio.currentTime;
-              var newtime = timestamp;
-              if(timestamp < audio.duration/20){
-                newtime = 0;
+              if(self.config.useSqueeze){
+                self.sendSocketNotification("SQUEEZECONTROL",{action:"seek", time:"-"+self.squeeze_duration/20});
               } else {
-                newtime = timestamp - audio.duration/20;
+                var audio = document.getElementById("audio_"+self.identifier);
+                var timestamp = audio.currentTime;
+                var newtime = timestamp;
+                if(timestamp < audio.duration/20){
+                  newtime = 0;
+                } else {
+                  newtime = timestamp - audio.duration/20;
+                }
+                audio.currentTime = newtime;
               }
-              audio.currentTime = newtime;
             break;
         }
         break;
@@ -889,16 +1022,19 @@ Module.register("MMM-SMP-Simple-Music-Player",{
             self.setButtonMarker();
             break;
           case "volume":
-            this.config.volume += 10;
-            if(this.config.volume > 100) this.config.volume = 100;
+            self.config.volume += 10;
+            if(self.config.volume > 100) self.config.volume = 100;
             document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume"
-                                                            + Math.floor(this.config.volume / 25)
+                                                            + Math.floor(self.config.volume / 25)
                                                             + ".svg";
-            if(this.config.volume == 0){
+            if(self.config.volume == 0){
               document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume_off.svg";
             }
-            document.getElementById("inner_volume_slider"+self.identifier).style.width = this.config.volume + "%";
+            document.getElementById("inner_volume_slider"+self.identifier).style.width = self.config.volume + "%";
             document.getElementById("audio_"+self.identifier).volume = self.config.volume/100;
+            if(self.config.useSqueeze){
+              self.sendSocketNotification("SQUEEZECONTROL", {action:"volume", percent:"+10"});
+            }
             break;
           case "source":
             this.source_menu_selected++;
@@ -912,15 +1048,19 @@ Module.register("MMM-SMP-Simple-Music-Player",{
             break;
           case "duration":
             if(this.playerstate == "playing")
-              var audio = document.getElementById("audio_"+self.identifier);
-              var timestamp = audio.currentTime;
-              var newtime = timestamp;
-              if(timestamp + audio.duration/20 > audio.duration){
-                newtime = audio.duration - 1;
+              if(self.config.useSqueeze){
+                self.sendSocketNotification("SQUEEZECONTROL",{action:"seek", time:"+"+self.squeeze_duration/20});
               } else {
-                newtime = timestamp + audio.duration/20;
+                var audio = document.getElementById("audio_"+self.identifier);
+                var timestamp = audio.currentTime;
+                var newtime = timestamp;
+                if(timestamp + audio.duration/20 > audio.duration){
+                  newtime = audio.duration - 1;
+                } else {
+                  newtime = timestamp + audio.duration/20;
+                }
+                audio.currentTime = newtime;
               }
-              audio.currentTime = newtime;
             break;
         }
         break;
@@ -992,7 +1132,19 @@ Module.register("MMM-SMP-Simple-Music-Player",{
       case "INITIALIZE":
         self.playlists = payload.playlists;
         self.folder_structure = payload.folder_structure;
-        Log.log("PlaylistList: "+self.playlists.length);
+        Log.log("Playlists: "+self.playlists.length);
+        if(self.config.useSqueeze){
+          self.artists = payload.artists;
+          Log.log("Artists: "+self.artists.length);
+          var playername = "Squeeze: Player offline";
+          for(var i=0;i<payload.players.length;i++){
+            if(payload.players[i].playerid == self.config.squeezePlayerID){
+              playername = "Squeeze: "+payload.players[i].name;
+              break;
+            }
+          }
+          document.getElementById("sourcetext"+self.identifier).innerHTML = playername;
+        }
         self.buildSourceMenu(self.source_menu);
         break;
       case "LOADEDPLAYLIST":
@@ -1012,8 +1164,9 @@ Module.register("MMM-SMP-Simple-Music-Player",{
         var audio = document.getElementById("audio_"+self.identifier);
         audio.loaded=true;
         audio.load();
-        audio.setAttribute('src', "http://localhost:"+self.config.streamingPort);
+        audio.setAttribute('src', "http://"+window.location.hostname+":"+self.config.streamingPort);
         this.current_song = payload.tracknumber;
+
         if(self.playerstate == "playing"){
           audio.play();
         } else if(self.config.autoplay){
@@ -1022,10 +1175,73 @@ Module.register("MMM-SMP-Simple-Music-Player",{
           self.hideMenu();
         }
         break;
+      case "SQUEEZEPLAYERSTATUS":
+        //play status
+        switch(payload.status.mode){
+          case "play":
+            self.playerstate = "playing";
+            document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/pause.svg";
+            break;
+          case "pause":
+            self.playerstate = "paused";
+            document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/play.svg";
+            break;
+          case "stop":
+            self.playerstate = "stopped";
+            document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/play.svg";
+            break;
+        }
+        // time
+        var percent = Math.min(payload.status.time/payload.status.duration*100, 100);
+        document.getElementById("duration_inner_progressbar"+self.identifier).style.width = percent+"%";
+        // shuffle
+        switch(payload.status["playlist shuffle"]){
+          case "0":
+            self.config.shuffle = false;
+            document.getElementById("shuffle_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/noshuffle.svg";
+            break;
+          case "1":
+            self.config.shuffle = true;
+            document.getElementById("shuffle_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/shuffle.svg";
+            break;
+        }
+        // loop
+        switch(payload.status["playlist repeat"]){
+          case "0": // no repeat
+            self.config.loop = "noloop";
+            document.getElementById("loop_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/noloop.svg";
+            break;
+          case "1": // repeat one
+            self.config.loop = "loop1";
+            document.getElementById("loop_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/loop1.svg";
+            break;
+          case "2": // repeat all
+            self.config.loop = "loop";
+            document.getElementById("loop_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/loop.svg";
+            break;
+        }
+        // volume
+        self.config.volume = parseInt(payload.status["mixer volume"]);
+				document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume"
+        							+ Math.floor(self.config.volume / 25)
+                      + ".svg";
+				if(self.config.volume == 0){
+					document.getElementById("volume_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/volume_off.svg";
+				}
+				document.getElementById("inner_volume_slider"+self.identifier).style.width = self.config.volume + "%";
+        // current track
+        self.current_song = parseInt(payload.status.playlist_cur_index);
+        document.getElementById("currentsong_text"+self.identifier).innerHTML = payload.status["playlist index"][self.current_song].title + " - " + payload.status.current_artist;
+        // duration
+        self.squeeze_duration = payload.status.duration;
+        break;
       case "LOADINGERROR":
         self.playerstate = "stopped";
         document.getElementById("play_button"+self.identifier).src = "MMM-SMP-Simple-Music-Player/play.svg";
         self.sendNotification("SHOW_ALERT", {type: "notification", title: "Loading Error", message: "Could not load file"});
+        break;
+      case "SHOWERROR":
+        Log.error("ERROR: "+payload.errormessage);
         break;
     }
   },
